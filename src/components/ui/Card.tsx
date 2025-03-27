@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Movie } from "@/store/useStore";
 import { StarIcon } from "@heroicons/react/20/solid";
+import Image from "next/image";
 
 interface CardProps {
   children: ReactNode;
@@ -29,15 +30,18 @@ interface MovieCardProps {
 export function MovieCard({ movie, onClick }: MovieCardProps) {
   return (
     <div
-      className="group relative bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200"
+      className="group relative bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer 
+        hover:shadow-lg hover:scale-[1.02] transition-all duration-300 ease-in-out"
       onClick={onClick}
     >
       <div className="aspect-[2/3] relative">
         {movie.poster_path ? (
-          <img
+          <Image
             src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
             alt={movie.title}
-            className="w-full h-full object-cover"
+            width={500}
+            height={750}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full bg-gray-200 flex items-center justify-center">
