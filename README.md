@@ -1,22 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# What Should I Watch?
+
+An interactive web application that helps users discover personalized movie recommendations based on their preferences.
+
+## Features
+
+- Multi-step selection process for movie preferences
+- Genre and decade-based filtering
+- Mood and rating preferences
+- Integration with TMDB API
+- Responsive design for all devices
+- Smooth animations and transitions
+
+## Tech Stack
+
+- Next.js 14 with TypeScript
+- Tailwind CSS for styling
+- Zustand for state management
+- Framer Motion for animations
+- TMDB API for movie data
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env.local` file in the root directory and add your TMDB API key:
+   ```
+   NEXT_PUBLIC_TMDB_API_KEY=your_api_key_here
+   ```
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Development
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
