@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Movie } from "@/store/useStore";
+import { Movie } from "@/types/movie";
 import { StarIcon } from "@heroicons/react/20/solid";
 import Image from "next/image";
 

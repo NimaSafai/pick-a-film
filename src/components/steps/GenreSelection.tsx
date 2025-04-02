@@ -31,6 +31,14 @@ export const GenreSelection = () => {
     );
   };
 
+  // Function to get display name for a genre
+  const getGenreDisplayName = (genre: Genre) => {
+    if (genre.name === "Science Fiction") {
+      return "Sci-Fi";
+    }
+    return genre.name;
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -52,7 +60,7 @@ export const GenreSelection = () => {
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
-            {genre.name}
+            {getGenreDisplayName(genre)}
           </button>
         ))}
       </div>

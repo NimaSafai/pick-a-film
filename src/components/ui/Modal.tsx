@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon, StarIcon } from "@heroicons/react/24/outline";
-import { Movie } from "@/store/useStore";
+import { Movie } from "@/types/movie";
 import Image from "next/image";
 import { COUNTRIES } from "@/data/countries";
 
@@ -122,6 +122,16 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                               </p>
                             </div>
                           )}
+                          {movie.runtime && (
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-500">
+                                Runtime
+                              </h4>
+                              <p className="mt-1 text-sm text-gray-700">
+                                {movie.runtime} minutes
+                              </p>
+                            </div>
+                          )}
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">
                               Rating
@@ -147,14 +157,16 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                               Genres
                             </h4>
                             <div className="mt-1 flex flex-wrap gap-2">
-                              {movie.genres.map((genre) => (
-                                <span
-                                  key={genre.id}
-                                  className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10"
-                                >
-                                  {genre.name}
-                                </span>
-                              ))}
+                              {movie.genres.map(
+                                (genre: { id: number; name: string }) => (
+                                  <span
+                                    key={genre.id}
+                                    className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10"
+                                  >
+                                    {genre.name}
+                                  </span>
+                                )
+                              )}
                             </div>
                           </div>
                           {movie.credits && (
@@ -167,7 +179,9 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                                   <p className="text-sm text-gray-700">
                                     {movie.credits.cast
                                       .slice(0, 5)
-                                      .map((cast) => cast.name)
+                                      .map(
+                                        (cast: { name: string }) => cast.name
+                                      )
                                       .join(", ")}
                                     {movie.credits.cast.length > 8}
                                   </p>
@@ -180,8 +194,14 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                                 <div className="mt-1">
                                   <p className="text-sm text-gray-700">
                                     {movie.credits.crew
-                                      .filter((crew) => crew.job === "Director")
-                                      .map((director) => director.name)
+                                      .filter(
+                                        (crew: { job: string }) =>
+                                          crew.job === "Director"
+                                      )
+                                      .map(
+                                        (director: { name: string }) =>
+                                          director.name
+                                      )
                                       .join(", ")}
                                   </p>
                                 </div>

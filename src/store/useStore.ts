@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { Movie } from "@/types/movie";
 
 export type Genre = {
   id: number;
@@ -12,43 +13,10 @@ export interface Decade {
   end: number;
 }
 
-export type Mood = {
-  id: string;
-  name: string;
-};
-
 export type Country = {
   id: string;
   label: string;
   code: string;
-};
-
-export type Movie = {
-  id: number;
-  title: string;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  release_date: string;
-  overview: string;
-  vote_average: number;
-  imdb_id?: string;
-  origin_country?: string[];
-  genres: Genre[];
-  credits?: {
-    cast: Array<{
-      id: number;
-      name: string;
-      character: string;
-      profile_path: string | null;
-    }>;
-    crew: Array<{
-      id: number;
-      name: string;
-      job: string;
-      department: string;
-      profile_path: string | null;
-    }>;
-  };
 };
 
 export type SortOption = {
@@ -97,25 +65,29 @@ interface StoreState {
   selectedGenres: Genre[];
   selectedDecades: Decade[];
   selectedCountries: Country[];
-  selectedMoods: Mood[];
   preferredActor: string;
   preferredDirector: string;
+  maxRuntime: number;
   recommendations: Movie[];
   isLoading: boolean;
   error: string | null;
   selectedSort: string;
+  currentPage: number;
+  itemsPerPage: number;
+  setCurrentPage: (page: number) => void;
   setCurrentStep: (step: number) => void;
   setSelectedGenres: (genres: Genre[]) => void;
   setSelectedDecades: (decades: Decade[]) => void;
   setSelectedCountries: (countries: Country[]) => void;
-  setSelectedMoods: (moods: Mood[]) => void;
   setPreferredActor: (actor: string) => void;
   setPreferredDirector: (director: string) => void;
+  setMaxRuntime: (max: number) => void;
   setRecommendations: (movies: Movie[]) => void;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setSelectedSort: (sort: string) => void;
   getSortedRecommendations: () => Movie[];
+  getPaginatedRecommendations: () => Movie[];
   resetState: () => void;
 }
 
@@ -124,20 +96,23 @@ export const useStore = create<StoreState>((set, get) => ({
   selectedGenres: [],
   selectedDecades: [],
   selectedCountries: [],
-  selectedMoods: [],
   preferredActor: "",
   preferredDirector: "",
+  maxRuntime: 240,
   recommendations: [],
   isLoading: false,
   error: null,
   selectedSort: "rating-desc",
+  currentPage: 1,
+  itemsPerPage: 12,
+  setCurrentPage: (page) => set({ currentPage: page }),
   setCurrentStep: (step) => set({ currentStep: step }),
   setSelectedGenres: (genres) => set({ selectedGenres: genres }),
   setSelectedDecades: (decades) => set({ selectedDecades: decades }),
   setSelectedCountries: (countries) => set({ selectedCountries: countries }),
-  setSelectedMoods: (moods) => set({ selectedMoods: moods }),
   setPreferredActor: (actor) => set({ preferredActor: actor }),
   setPreferredDirector: (director) => set({ preferredDirector: director }),
+  setMaxRuntime: (max) => set({ maxRuntime: max }),
   setRecommendations: (movies) => set({ recommendations: movies }),
   setIsLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
@@ -148,18 +123,28 @@ export const useStore = create<StoreState>((set, get) => ({
     if (!sortOption) return recommendations;
     return [...recommendations].sort(sortOption.sortFn);
   },
+  getPaginatedRecommendations: () => {
+    const { recommendations, selectedSort, currentPage, itemsPerPage } = get();
+    const sortOption = sortOptions.find((option) => option.id === selectedSort);
+    const sortedMovies = sortOption
+      ? [...recommendations].sort(sortOption.sortFn)
+      : recommendations;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedMovies.slice(startIndex, startIndex + itemsPerPage);
+  },
   resetState: () =>
     set({
       currentStep: 1,
       selectedGenres: [],
       selectedDecades: [],
       selectedCountries: [],
-      selectedMoods: [],
       preferredActor: "",
       preferredDirector: "",
+      maxRuntime: 240,
       recommendations: [],
       isLoading: false,
       error: null,
       selectedSort: "rating-desc",
+      currentPage: 1,
     }),
 }));

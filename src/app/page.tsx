@@ -1,176 +1,174 @@
 "use client";
 
-import { useStore, sortOptions, SortOption, Movie } from "@/store/useStore";
-import { StepLayout } from "@/components/layout/StepLayout";
+import { useStore, sortOptions, SortOption } from "@/store/useStore";
+import { Movie } from "@/types/movie";
 import { GenreSelection } from "@/components/steps/GenreSelection";
 import { DecadeSelection } from "@/components/steps/DecadeSelection";
 import { CountrySelection } from "@/components/steps/CountrySelection";
-import { MoodSelection } from "@/components/steps/MoodSelection";
 import { CreatorSelection } from "@/components/steps/CreatorSelection";
+import { RuntimeSelection } from "@/components/steps/RuntimeSelection";
 import { MovieCard } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { tmdbApi } from "@/services/tmdb";
 import { useState } from "react";
 
-const STEPS = [
-  {
-    id: 1,
-    title: "Select Genres",
-    description: "Choose one or more genres that interest you",
-    component: GenreSelection,
-  },
-  {
-    id: 2,
-    title: "Choose Decades",
-    description: "Select the time periods you prefer",
-    component: DecadeSelection,
-  },
-  {
-    id: 3,
-    title: "Select Countries",
-    description: "Choose countries of origin (optional)",
-    component: CountrySelection,
-  },
-  {
-    id: 4,
-    title: "Pick Your Mood",
-    description: "What kind of mood are you in? (optional)",
-    component: MoodSelection,
-  },
-  {
-    id: 5,
-    title: "Select Creators",
-    description: "Search for specific actors or directors (optional)",
-    component: CreatorSelection,
-  },
-];
-
 export default function Home() {
   const {
-    currentStep,
     selectedGenres,
     selectedDecades,
     selectedCountries,
-    selectedMoods,
     preferredActor,
     preferredDirector,
+    maxRuntime,
     setRecommendations,
     setIsLoading,
     setError,
     isLoading,
     error,
-    setCurrentStep,
     selectedSort,
     setSelectedSort,
     getSortedRecommendations,
+    getPaginatedRecommendations,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
     resetState,
   } = useStore();
 
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const handleGetRecommendations = async () => {
-    if (selectedGenres.length === 0 || selectedDecades.length === 0) {
-      setError("Please select at least one genre and decade");
+    if (selectedGenres.length === 0) {
+      setError("Please select at least one genre");
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setLoadingProgress(0);
 
     try {
       // Get movies for each decade and combine results
-      const decadePromises = selectedDecades.map(async (decade) => {
-        const { results } = await tmdbApi.getMoviesByCriteria({
-          genres: selectedGenres.map((g) => g.id).join(","),
-          "primary_release_date.gte": `${decade.start}-01-01`,
-          "primary_release_date.lte": `${decade.end}-12-31`,
-          "vote_average.gte": 7.0,
-          page: 1,
-          ...(selectedCountries.length > 0 && {
-            region: selectedCountries.map((c) => c.code).join(","),
-          }),
-        });
-        return results;
-      });
+      const decadePromises =
+        selectedDecades.length > 0
+          ? selectedDecades.map(async (decade, decadeIndex) => {
+              // Fetch first 5 pages for each decade
+              const pagePromises = [1, 2, 3, 4, 5].map((page, pageIndex) => {
+                // Update progress as we fetch each page
+                const progress =
+                  ((decadeIndex * 5 + pageIndex) /
+                    (selectedDecades.length * 5)) *
+                  50;
+                setLoadingProgress(Math.round(progress));
+
+                return tmdbApi.getMoviesByCriteria({
+                  genres: selectedGenres.map((g) => g.id).join(","),
+                  "primary_release_date.gte": `${decade.start}-01-01`,
+                  "primary_release_date.lte": `${decade.end}-12-31`,
+                  "vote_average.gte": 5.0,
+                  page,
+                  ...(selectedCountries.length > 0 && {
+                    region: selectedCountries.map((c) => c.code).join(","),
+                  }),
+                });
+              });
+
+              const pageResults = await Promise.all(pagePromises);
+              return pageResults.flatMap((result) => result.results);
+            })
+          : [
+              // If no decades selected, get movies from all decades
+              (async () => {
+                // Fetch first 5 pages
+                const pagePromises = [1, 2, 3, 4, 5].map((page, pageIndex) => {
+                  // Update progress as we fetch each page
+                  const progress = (pageIndex / 5) * 50;
+                  setLoadingProgress(Math.round(progress));
+
+                  return tmdbApi.getMoviesByCriteria({
+                    genres: selectedGenres.map((g) => g.id).join(","),
+                    "vote_average.gte": 5.0,
+                    page,
+                    ...(selectedCountries.length > 0 && {
+                      region: selectedCountries.map((c) => c.code).join(","),
+                    }),
+                  });
+                });
+
+                const pageResults = await Promise.all(pagePromises);
+                return pageResults.flatMap((result) => result.results);
+              })(),
+            ];
 
       const decadeResults = await Promise.all(decadePromises);
       const allMovies = decadeResults.flat();
 
-      if (allMovies.length === 0) {
+      // Remove duplicates based on movie ID
+      const uniqueMovies = Array.from(
+        new Map(allMovies.map((movie) => [movie.id, movie])).values()
+      );
+
+      if (uniqueMovies.length === 0) {
         setError(
           "No movies found matching your criteria. Try adjusting your selections."
         );
         return;
       }
 
+      setLoadingProgress(60);
+
       // Fetch full movie details including genres and credits
       const detailedMovies = await Promise.all(
-        allMovies.map((movie) => tmdbApi.getMovieDetails(movie.id))
+        uniqueMovies.map((movie, index) => {
+          // Update progress as we fetch movie details
+          const progress = 60 + Math.round((index / uniqueMovies.length) * 30);
+          setLoadingProgress(progress);
+          return tmdbApi.getMovieDetails(movie.id);
+        })
       );
 
-      // Filter movies based on mood and creators
+      setLoadingProgress(90);
+
+      // Filter movies based on creators and runtime
       let filteredMovies = detailedMovies;
 
-      // Filter by mood if selected
-      if (selectedMoods.length > 0) {
-        filteredMovies = filteredMovies.filter((movie) => {
-          const movieGenres = movie.genres.map((g) => g.name.toLowerCase());
-
-          return selectedMoods.some((mood) => {
-            switch (mood.id) {
-              case "light":
-                return movieGenres.some((g) =>
-                  ["comedy", "family", "animation"].includes(g)
-                );
-              case "serious":
-                return movieGenres.some((g) =>
-                  ["drama", "thriller", "crime"].includes(g)
-                );
-              case "inspiring":
-                return movieGenres.some((g) =>
-                  ["drama", "biography", "sport"].includes(g)
-                );
-              case "dark":
-                return movieGenres.some((g) =>
-                  ["horror", "thriller", "crime"].includes(g)
-                );
-              case "romantic":
-                return movieGenres.some((g) =>
-                  ["romance", "romantic comedy"].includes(g)
-                );
-              case "thrilling":
-                return movieGenres.some((g) =>
-                  ["action", "thriller", "adventure"].includes(g)
-                );
-              case "funny":
-                return movieGenres.some((g) =>
-                  ["comedy", "romantic comedy"].includes(g)
-                );
-              case "thoughtful":
-                return movieGenres.some((g) =>
-                  ["drama", "documentary", "biography"].includes(g)
-                );
-              default:
-                return true;
-            }
-          });
+      // Filter by runtime if specified
+      if (maxRuntime < 240) {
+        console.log(`Filtering movies by runtime <= ${maxRuntime} minutes`);
+        filteredMovies = filteredMovies.filter((movie: Movie) => {
+          if (!movie.runtime) {
+            console.log(`Movie ${movie.title} has no runtime data`);
+            return false;
+          }
+          const isIncluded = movie.runtime <= maxRuntime;
+          console.log(
+            `Movie ${movie.title}: ${movie.runtime} minutes - ${
+              isIncluded ? "included" : "excluded"
+            }`
+          );
+          return isIncluded;
         });
+        console.log(
+          `After runtime filtering: ${filteredMovies.length} movies remain`
+        );
       }
 
       // Filter by actor if selected
       if (preferredActor) {
-        filteredMovies = filteredMovies.filter((movie) => {
+        filteredMovies = filteredMovies.filter((movie: Movie) => {
           return movie.credits?.cast?.some(
-            (cast) => cast.name.toLowerCase() === preferredActor.toLowerCase()
+            (cast: { name: string }) =>
+              cast.name.toLowerCase() === preferredActor.toLowerCase()
           );
         });
       }
 
       // Filter by director if selected
       if (preferredDirector) {
-        filteredMovies = filteredMovies.filter((movie) => {
+        filteredMovies = filteredMovies.filter((movie: Movie) => {
           return movie.credits?.crew?.some(
-            (crew) =>
+            (crew: { name: string; job: string }) =>
               crew.name.toLowerCase() === preferredDirector.toLowerCase() &&
               crew.job === "Director"
           );
@@ -184,22 +182,29 @@ export default function Home() {
         return;
       }
 
-      // Sort by vote average and take top 20
-      const sortedMovies = filteredMovies
-        .sort((a, b) => b.vote_average - a.vote_average)
-        .slice(0, 20);
+      setLoadingProgress(95);
 
+      // Sort by vote average and take top 100
+      const sortedMovies = filteredMovies
+        .sort((a: Movie, b: Movie) => b.vote_average - a.vote_average)
+        .slice(0, 100);
+
+      setLoadingProgress(100);
       setRecommendations(sortedMovies);
-      setCurrentStep(0);
     } catch (error) {
       setError("Failed to fetch recommendations. Please try again.");
       console.error("Error fetching recommendations:", error);
     } finally {
       setIsLoading(false);
+      setLoadingProgress(0);
     }
   };
 
-  if (currentStep === 0) {
+  if (getSortedRecommendations().length > 0) {
+    const totalPages = Math.ceil(
+      getSortedRecommendations().length / itemsPerPage
+    );
+
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -243,15 +248,46 @@ export default function Home() {
           ) : error ? (
             <div className="text-center text-red-600 mb-8">{error}</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {getSortedRecommendations().map((movie) => (
-                <MovieCard
-                  key={movie.id}
-                  movie={movie}
-                  onClick={() => setSelectedMovie(movie)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {getPaginatedRecommendations().map((movie) => (
+                  <MovieCard
+                    key={movie.id}
+                    movie={movie}
+                    onClick={() => setSelectedMovie(movie)}
+                  />
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="mt-8 flex justify-center items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 rounded-md ${
+                      currentPage === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700"
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <span className="text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 rounded-md ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700"
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
         <Modal
@@ -263,22 +299,95 @@ export default function Home() {
     );
   }
 
-  const CurrentStepComponent = STEPS[currentStep - 1].component;
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <StepLayout
-        title={STEPS[currentStep - 1].title}
-        description={STEPS[currentStep - 1].description}
-        isLastStep={currentStep === 5}
-        isNextDisabled={
-          (currentStep === 1 && selectedGenres.length === 0) ||
-          (currentStep === 2 && selectedDecades.length === 0)
-        }
-        onNext={currentStep === 5 ? handleGetRecommendations : undefined}
-      >
-        <CurrentStepComponent />
-      </StepLayout>
+    <div className="min-h-screen bg-gray-50 py-12 px-8 sm:px-6 lg:px-8">
+      <div className="max-w-[1400px] mx-auto">
+        <div className="text-center mb-12 mt-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            What film should I watch?
+          </h1>
+          <p className="text-xl text-gray-600">
+            Customize your preferences below to get personalized movie
+            recommendations
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Genres
+            </h2>
+            <GenreSelection />
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Decades
+            </h2>
+            <DecadeSelection />
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Countries
+            </h2>
+            <CountrySelection />
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Runtime
+            </h2>
+            <RuntimeSelection />
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 md:col-span-2">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Creators
+            </h2>
+            <CreatorSelection />
+          </div>
+        </div>
+
+        <div className="text-center">
+          <button
+            onClick={handleGetRecommendations}
+            disabled={isLoading || selectedGenres.length === 0}
+            className={`inline-flex items-center px-8 py-3 border border-transparent text-lg font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+              isLoading || selectedGenres.length === 0
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Getting Recommendations...
+              </>
+            ) : (
+              "Generate Recommendations"
+            )}
+          </button>
+          {selectedGenres.length === 0 && (
+            <p className="mt-4 text-sm text-gray-500">
+              Please select at least one genre to continue
+            </p>
+          )}
+          {isLoading && (
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${loadingProgress}%` }}
+                ></div>
+              </div>
+              <p className="mt-2 text-sm text-gray-500">
+                Loading movies... {loadingProgress}%
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

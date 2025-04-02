@@ -45,7 +45,8 @@ export const DecadeSelection = () => {
       </div>
       {selectedDecades.length === 0 && (
         <p className="text-center text-gray-500">
-          Please select at least one decade to continue
+          Filter movies by release decade. If no decades are selected, movies
+          from all decades will be included.
         </p>
       )}
     </div>

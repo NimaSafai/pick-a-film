@@ -1,5 +1,6 @@
 import axios from "axios";
-import { Genre, Movie } from "@/store/useStore";
+import { Genre } from "@/store/useStore";
+import { Movie } from "@/types/movie";
 
 const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
