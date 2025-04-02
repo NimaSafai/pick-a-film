@@ -9,6 +9,7 @@ interface StepLayoutProps {
   onNext?: () => void;
   onBack?: () => void;
   isLastStep?: boolean;
+  isNextDisabled?: boolean;
 }
 
 export const StepLayout = ({
@@ -18,6 +19,7 @@ export const StepLayout = ({
   onNext,
   onBack,
   isLastStep = false,
+  isNextDisabled = false,
 }: StepLayoutProps) => {
   const { currentStep, setCurrentStep, isLoading } = useStore();
 
@@ -70,9 +72,11 @@ export const StepLayout = ({
           <div className="ml-auto">
             <button
               onClick={handleNext}
-              disabled={isLoading}
-              className={`bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-medium ${
-                isLoading ? "cursor-wait" : "cursor-pointer"
+              disabled={isLoading || isNextDisabled}
+              className={`bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium ${
+                isLoading || isNextDisabled
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-indigo-700 cursor-pointer"
               }`}
             >
               {isLoading ? (

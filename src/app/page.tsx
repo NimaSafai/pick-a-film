@@ -4,6 +4,7 @@ import { useStore, sortOptions, SortOption, Movie } from "@/store/useStore";
 import { StepLayout } from "@/components/layout/StepLayout";
 import { GenreSelection } from "@/components/steps/GenreSelection";
 import { DecadeSelection } from "@/components/steps/DecadeSelection";
+import { CountrySelection } from "@/components/steps/CountrySelection";
 import { MoodSelection } from "@/components/steps/MoodSelection";
 import { CreatorSelection } from "@/components/steps/CreatorSelection";
 import { MovieCard } from "@/components/ui/Card";
@@ -26,12 +27,18 @@ const STEPS = [
   },
   {
     id: 3,
+    title: "Select Countries",
+    description: "Choose countries of origin (optional)",
+    component: CountrySelection,
+  },
+  {
+    id: 4,
     title: "Pick Your Mood",
     description: "What kind of mood are you in? (optional)",
     component: MoodSelection,
   },
   {
-    id: 4,
+    id: 5,
     title: "Select Creators",
     description: "Search for specific actors or directors (optional)",
     component: CreatorSelection,
@@ -43,6 +50,7 @@ export default function Home() {
     currentStep,
     selectedGenres,
     selectedDecades,
+    selectedCountries,
     selectedMoods,
     preferredActor,
     preferredDirector,
@@ -78,6 +86,9 @@ export default function Home() {
           "primary_release_date.lte": `${decade.end}-12-31`,
           "vote_average.gte": 7.0,
           page: 1,
+          ...(selectedCountries.length > 0 && {
+            region: selectedCountries.map((c) => c.code).join(","),
+          }),
         });
         return results;
       });
@@ -188,8 +199,6 @@ export default function Home() {
     }
   };
 
-  const CurrentStepComponent = STEPS[currentStep - 1]?.component;
-
   if (currentStep === 0) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -254,16 +263,22 @@ export default function Home() {
     );
   }
 
+  const CurrentStepComponent = STEPS[currentStep - 1].component;
+
   return (
-    <StepLayout
-      title={STEPS[currentStep - 1].title}
-      description={STEPS[currentStep - 1].description}
-      onNext={
-        currentStep === STEPS.length ? handleGetRecommendations : undefined
-      }
-      isLastStep={currentStep === STEPS.length}
-    >
-      <CurrentStepComponent />
-    </StepLayout>
+    <div className="min-h-screen bg-gray-50">
+      <StepLayout
+        title={STEPS[currentStep - 1].title}
+        description={STEPS[currentStep - 1].description}
+        isLastStep={currentStep === 5}
+        isNextDisabled={
+          (currentStep === 1 && selectedGenres.length === 0) ||
+          (currentStep === 2 && selectedDecades.length === 0)
+        }
+        onNext={currentStep === 5 ? handleGetRecommendations : undefined}
+      >
+        <CurrentStepComponent />
+      </StepLayout>
+    </div>
   );
 }

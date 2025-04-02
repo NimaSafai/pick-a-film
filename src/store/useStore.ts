@@ -5,15 +5,22 @@ export type Genre = {
   name: string;
 };
 
-export type Decade = {
+export interface Decade {
+  id: number;
+  label: string;
   start: number;
   end: number;
-  label: string;
-};
+}
 
 export type Mood = {
   id: string;
   name: string;
+};
+
+export type Country = {
+  id: string;
+  label: string;
+  code: string;
 };
 
 export type Movie = {
@@ -24,6 +31,8 @@ export type Movie = {
   release_date: string;
   overview: string;
   vote_average: number;
+  imdb_id?: string;
+  origin_country?: string[];
   genres: Genre[];
   credits?: {
     cast: Array<{
@@ -87,6 +96,7 @@ interface StoreState {
   currentStep: number;
   selectedGenres: Genre[];
   selectedDecades: Decade[];
+  selectedCountries: Country[];
   selectedMoods: Mood[];
   preferredActor: string;
   preferredDirector: string;
@@ -97,6 +107,7 @@ interface StoreState {
   setCurrentStep: (step: number) => void;
   setSelectedGenres: (genres: Genre[]) => void;
   setSelectedDecades: (decades: Decade[]) => void;
+  setSelectedCountries: (countries: Country[]) => void;
   setSelectedMoods: (moods: Mood[]) => void;
   setPreferredActor: (actor: string) => void;
   setPreferredDirector: (director: string) => void;
@@ -112,6 +123,7 @@ export const useStore = create<StoreState>((set, get) => ({
   currentStep: 1,
   selectedGenres: [],
   selectedDecades: [],
+  selectedCountries: [],
   selectedMoods: [],
   preferredActor: "",
   preferredDirector: "",
@@ -122,6 +134,7 @@ export const useStore = create<StoreState>((set, get) => ({
   setCurrentStep: (step) => set({ currentStep: step }),
   setSelectedGenres: (genres) => set({ selectedGenres: genres }),
   setSelectedDecades: (decades) => set({ selectedDecades: decades }),
+  setSelectedCountries: (countries) => set({ selectedCountries: countries }),
   setSelectedMoods: (moods) => set({ selectedMoods: moods }),
   setPreferredActor: (actor) => set({ preferredActor: actor }),
   setPreferredDirector: (director) => set({ preferredDirector: director }),
@@ -140,6 +153,7 @@ export const useStore = create<StoreState>((set, get) => ({
       currentStep: 1,
       selectedGenres: [],
       selectedDecades: [],
+      selectedCountries: [],
       selectedMoods: [],
       preferredActor: "",
       preferredDirector: "",

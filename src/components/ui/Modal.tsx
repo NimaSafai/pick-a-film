@@ -1,8 +1,9 @@
 import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, StarIcon } from "@heroicons/react/24/outline";
 import { Movie } from "@/store/useStore";
 import Image from "next/image";
+import { COUNTRIES } from "@/data/countries";
 
 interface ModalProps {
   isOpen: boolean;
@@ -13,6 +14,14 @@ interface ModalProps {
 export function Modal({ isOpen, onClose, movie }: ModalProps) {
   if (!movie) return null;
 
+  const imdbUrl = movie.imdb_id
+    ? `https://www.imdb.com/title/${movie.imdb_id}/`
+    : null;
+
+  const countryName = movie.origin_country?.[0]
+    ? COUNTRIES.find((country) => country.code === movie.origin_country?.[0])
+        ?.label || movie.origin_country[0]
+    : null;
   return (
     <Transition.Root show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -43,7 +52,7 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                 <div className="absolute right-0 top-0 pr-4 pt-4">
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 cursor-pointer"
                     onClick={onClose}
                   >
                     <span className="sr-only">Close</span>
@@ -71,12 +80,14 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                         )}
                       </div>
                       <div className="w-full md:w-2/3">
-                        <Dialog.Title
-                          as="h3"
-                          className="text-2xl font-semibold leading-6 text-gray-900 mb-4"
-                        >
-                          {movie.title}
-                        </Dialog.Title>
+                        <div className="flex justify-between items-start">
+                          <Dialog.Title
+                            as="h3"
+                            className="text-2xl font-semibold leading-6 text-gray-900 mb-4"
+                          >
+                            {movie.title}
+                          </Dialog.Title>
+                        </div>
                         <div className="mt-2 space-y-4">
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">
@@ -101,13 +112,35 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                               )}
                             </p>
                           </div>
+                          {countryName && (
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-500">
+                                Country of Origin
+                              </h4>
+                              <p className="mt-1 text-sm text-gray-700">
+                                {countryName}
+                              </p>
+                            </div>
+                          )}
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">
                               Rating
                             </h4>
-                            <p className="mt-1 text-sm text-gray-700">
-                              {movie.vote_average.toFixed(1)} / 10
-                            </p>
+                            <div className="mt-1 flex items-center gap-1">
+                              {[...Array(10)].map((_, index) => (
+                                <StarIcon
+                                  key={index}
+                                  className={`h-5 w-5 ${
+                                    index < Math.round(movie.vote_average)
+                                      ? "text-yellow-400 fill-yellow-400"
+                                      : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                              <span className="ml-2 text-sm text-gray-500">
+                                ({movie.vote_average.toFixed(1)})
+                              </span>
+                            </div>
                           </div>
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">
@@ -136,7 +169,7 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                                       .slice(0, 5)
                                       .map((cast) => cast.name)
                                       .join(", ")}
-                                    {movie.credits.cast.length > 5 && "..."}
+                                    {movie.credits.cast.length > 8}
                                   </p>
                                 </div>
                               </div>
@@ -154,6 +187,23 @@ export function Modal({ isOpen, onClose, movie }: ModalProps) {
                                 </div>
                               </div>
                             </>
+                          )}
+                          {imdbUrl && (
+                            <a
+                              href={imdbUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center hover:opacity-80 transition-opacity"
+                              title="View on IMDB"
+                            >
+                              <Image
+                                src="https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/171_Imdb_logo_logos-512.png"
+                                alt="IMDB"
+                                width={48}
+                                height={48}
+                                className="w-12 h-12"
+                              />
+                            </a>
                           )}
                         </div>
                       </div>
