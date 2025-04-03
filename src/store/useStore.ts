@@ -67,25 +67,27 @@ interface StoreState {
   selectedCountries: Country[];
   preferredActor: string;
   preferredDirector: string;
-  maxRuntime: number;
   recommendations: Movie[];
   isLoading: boolean;
   error: string | null;
   selectedSort: string;
+  maxRuntime: number;
   currentPage: number;
   itemsPerPage: number;
-  setCurrentPage: (page: number) => void;
+  totalPages: number;
   setCurrentStep: (step: number) => void;
   setSelectedGenres: (genres: Genre[]) => void;
   setSelectedDecades: (decades: Decade[]) => void;
   setSelectedCountries: (countries: Country[]) => void;
   setPreferredActor: (actor: string) => void;
   setPreferredDirector: (director: string) => void;
-  setMaxRuntime: (max: number) => void;
   setRecommendations: (movies: Movie[]) => void;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setSelectedSort: (sort: string) => void;
+  setMaxRuntime: (runtime: number) => void;
+  setCurrentPage: (page: number) => void;
+  setTotalPages: (pages: number) => void;
   getSortedRecommendations: () => Movie[];
   getPaginatedRecommendations: () => Movie[];
   resetState: () => void;
@@ -98,25 +100,27 @@ export const useStore = create<StoreState>((set, get) => ({
   selectedCountries: [],
   preferredActor: "",
   preferredDirector: "",
-  maxRuntime: 240,
   recommendations: [],
   isLoading: false,
   error: null,
   selectedSort: "rating-desc",
+  maxRuntime: 240,
   currentPage: 1,
   itemsPerPage: 18,
-  setCurrentPage: (page) => set({ currentPage: page }),
+  totalPages: 0,
   setCurrentStep: (step) => set({ currentStep: step }),
   setSelectedGenres: (genres) => set({ selectedGenres: genres }),
   setSelectedDecades: (decades) => set({ selectedDecades: decades }),
   setSelectedCountries: (countries) => set({ selectedCountries: countries }),
   setPreferredActor: (actor) => set({ preferredActor: actor }),
   setPreferredDirector: (director) => set({ preferredDirector: director }),
-  setMaxRuntime: (max) => set({ maxRuntime: max }),
   setRecommendations: (movies) => set({ recommendations: movies }),
   setIsLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
   setSelectedSort: (sort) => set({ selectedSort: sort }),
+  setMaxRuntime: (runtime) => set({ maxRuntime: runtime }),
+  setCurrentPage: (page) => set({ currentPage: page }),
+  setTotalPages: (pages) => set({ totalPages: pages }),
   getSortedRecommendations: () => {
     const { recommendations, selectedSort } = get();
     const sortOption = sortOptions.find((option) => option.id === selectedSort);
@@ -124,11 +128,8 @@ export const useStore = create<StoreState>((set, get) => ({
     return [...recommendations].sort(sortOption.sortFn);
   },
   getPaginatedRecommendations: () => {
-    const { recommendations, selectedSort, currentPage, itemsPerPage } = get();
-    const sortOption = sortOptions.find((option) => option.id === selectedSort);
-    const sortedMovies = sortOption
-      ? [...recommendations].sort(sortOption.sortFn)
-      : recommendations;
+    const { currentPage, itemsPerPage } = get();
+    const sortedMovies = get().getSortedRecommendations();
     const startIndex = (currentPage - 1) * itemsPerPage;
     return sortedMovies.slice(startIndex, startIndex + itemsPerPage);
   },
@@ -140,11 +141,12 @@ export const useStore = create<StoreState>((set, get) => ({
       selectedCountries: [],
       preferredActor: "",
       preferredDirector: "",
-      maxRuntime: 240,
       recommendations: [],
       isLoading: false,
       error: null,
       selectedSort: "rating-desc",
+      maxRuntime: 240,
       currentPage: 1,
+      totalPages: 0,
     }),
 }));
