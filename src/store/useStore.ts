@@ -104,7 +104,7 @@ export const useStore = create<StoreState>((set, get) => ({
   error: null,
   selectedSort: "rating-desc",
   currentPage: 1,
-  itemsPerPage: 12,
+  itemsPerPage: 18,
   setCurrentPage: (page) => set({ currentPage: page }),
   setCurrentStep: (step) => set({ currentStep: step }),
   setSelectedGenres: (genres) => set({ selectedGenres: genres }),

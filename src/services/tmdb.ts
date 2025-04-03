@@ -118,7 +118,7 @@ export const tmdbApi = {
             api_key: TMDB_API_KEY,
             ...paramsWithoutGenres,
             with_genres: genreId,
-            "vote_count.gte": 100,
+            "vote_count.gte": 1000,
             sort_by: "vote_average.desc",
           }
         );
@@ -147,7 +147,7 @@ export const tmdbApi = {
       api_key: TMDB_API_KEY,
       ...params,
       with_genres: params.genres,
-      "vote_count.gte": 100,
+      "vote_count.gte": 1000,
       sort_by: "vote_average.desc",
     });
   },
